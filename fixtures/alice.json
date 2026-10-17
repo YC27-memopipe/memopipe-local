@@ -1,0 +1,21 @@
+{
+  "title": "CDI développement (Alice)",
+  "origin": "Manuel · Alice · DÉMO FICTIVE",
+  "ticket": {
+    "id": "T-ALICE",
+    "type": "access_request",
+    "requester": {
+      "name": "Alice Martin",
+      "email": "alice@nimbus.example",
+      "contract": "cdi",
+      "team": "développement"
+    }
+  },
+  "expected": {
+    "github": "write",
+    "vpn-prod": "access",
+    "slack": "member",
+    "ticket_status": "done"
+  },
+  "evidence": []
+}

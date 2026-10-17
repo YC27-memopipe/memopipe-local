@@ -1,0 +1,32 @@
+node_modules/
+.env
+.env.*
+!.env.example
+local-data/
+output/
+*.tgz
+*.tar
+*.tar.gz
+*.zip
+dist/
+
+# Captures and private local material
+recordings/
+captures/
+screenshots/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Temporary files and machine-specific output
+.DS_Store
+.cache/
+tmp/
+temp/
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

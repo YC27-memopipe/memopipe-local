@@ -1,0 +1,20 @@
+{
+  "name": "@canary/local",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CANARY DSL, step runner and consent-based Screenpipe analyzer",
+  "exports": { ".": "./src/index.ts", "./screenpipe": "./src/screenpipe.ts", "./contracts": "./src/types.ts" },
+  "files": ["src", "docs", "README.md", "examples"],
+  "scripts": {
+    "canary:analyze": "bun analyze/analyze.ts",
+    "canary:demo": "bun scripts/demo.ts",
+    "canary:check-screenpipe": "bun scripts/check-screenpipe.ts",
+    "test:integration": "bun test tests/http-integration.test.ts",
+    "test:package": "bun scripts/check-package.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "pack": "bun pm pack"
+  },
+  "engines": { "bun": ">=1.3.0" },
+  "devDependencies": { "@types/bun": "^1.3.0", "typescript": "^5.9.0" }
+}

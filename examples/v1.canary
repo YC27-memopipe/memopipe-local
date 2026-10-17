@@ -1,0 +1,8 @@
+AUTOMATION "Attribuer les accès d'un nouvel arrivant"
+USAGE "Demandes d'accès approuvées. Attribue le profil standard."
+SET p = ticket.requester
+DO iam.grant user=p.email system="github" level="write"
+DO iam.grant user=p.email system="vpn-prod" level="access"
+DO iam.grant user=p.email system="slack" level="member"
+DO tickets.comment id=ticket.id text="Accès standards attribués."
+DO tickets.close id=ticket.id

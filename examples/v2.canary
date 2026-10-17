@@ -1,0 +1,12 @@
+AUTOMATION "Attribuer les accès d'un nouvel arrivant"
+SET p = ticket.requester
+IF p.contract == "prestataire"
+  DO iam.grant user=p.email system="github" level="read" expires=p.end_date
+  DO iam.grant user=p.email system="slack" level="guest" expires=p.end_date
+ELSE
+  DO iam.grant user=p.email system="github" level="write"
+  DO iam.grant user=p.email system="vpn-prod" level="access"
+  DO iam.grant user=p.email system="slack" level="member"
+END
+DO tickets.comment id=ticket.id text="Accès attribués ({{p.contract}})."
+DO tickets.close id=ticket.id
