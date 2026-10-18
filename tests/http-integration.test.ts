@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { fileURLToPath } from "node:url";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +9,7 @@ import { extractScenarios } from "../src/extract.ts";
 import { MemoryAdapter, testAll, type RecordingFixture, type Scenario } from "../src/index.ts";
 import { uploadScenario } from "../src/hub.ts";
 import { mockHub } from "./helpers/mock-hub.ts";
-const root = new URL("../", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../", import.meta.url));
 const fixture: RecordingFixture = await Bun.file(`${root}fixtures/bob.json`).json();
 const bob = extractScenarios(fixtureRecords(fixture), fixture.provenance).scenarios;
 

@@ -7,6 +7,7 @@
   "files": ["src", "docs", "README.md", "examples"],
   "scripts": {
     "canary:analyze": "bun analyze/analyze.ts",
+    "canary:agent": "bun agent/agent.ts",
     "canary:demo": "bun scripts/demo.ts",
     "canary:check-screenpipe": "bun scripts/check-screenpipe.ts",
     "test:integration": "bun test tests/http-integration.test.ts",

@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test";
+import { fileURLToPath } from "node:url";
 import { ScreenpipeClient, fixtureRecords, localBase, normalizeRecords } from "../src/screenpipe.ts";
 import { extractScenarios, parseDate } from "../src/extract.ts";
 import { hubEndpoint, uploadScenario } from "../src/hub.ts";
 import { analyze, timeBounds } from "../analyze/analyze.ts";
 import type { RecordingFixture, Scenario } from "../src/types.ts";
-const path = new URL("../fixtures/bob.json", import.meta.url).pathname;
+const path = fileURLToPath(new URL("../fixtures/bob.json", import.meta.url));
 const fixture: RecordingFixture = await Bun.file(path).json();
 const records = fixtureRecords(fixture);
 const scenarios = extractScenarios(records, fixture.provenance).scenarios;

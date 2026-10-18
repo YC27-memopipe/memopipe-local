@@ -53,6 +53,23 @@ Options :
 
 Les fichiers créés par `--save` ont `provenance: recorded`, contrairement à `fixtures/bob.json` (`synthetic-demo`). Cette provenance est une déclaration, sans signature cryptographique. Stocker les vrais enregistrements dans `local-data/` (ignoré par Git) ; ils peuvent contenir du texte privé. `--save` crée le fichier avec permissions 0600. Ne pas committer de vrais enregistrements par défaut.
 
+## Agent : actions Gmail réelles via Screenpipe
+
+Le hub ne peut pas joindre Screenpipe (`localhost`). Quand une automatisation exécute `gmail.search` ou `gmail.send`, le hub met l'action en file d'attente. L'agent, lancé sur le PC qui a Screenpipe, la prend (`GET /api/agent/next`), l'exécute, puis renvoie le résultat (`POST /api/agent/jobs/<id>`). Le test pas à pas du hub affiche ce résultat comme les autres étapes.
+
+```sh
+# .env : SCREENPIPE_LOCAL_API_KEY, CANARY_HUB_URL, CANARY_TEAM_TOKEN (= MEMOPIPE_TEAM_TOKEN du hub),
+# CANARY_TEST_INBOX=vous@gmail.com pour que tous les envois arrivent dans votre boîte.
+bun run canary:agent --hub https://memopipe-serv.onrender.com
+```
+
+| Action | Exécution locale |
+| --- | --- |
+| `gmail.search` (query, limit) | `GET /connections/imap/messages` puis `/connections/imap/messages/<id>` pour l'extrait du plus récent. Requiert Screenpipe > Connections > Email Inbox (IMAP), avec un mot de passe d'application Google. |
+| `gmail.send` (to, subject, body) | Le navigateur piloté par Screenpipe (`owned-default` ou `user-browser`, option `--browser`) ouvre la rédaction Gmail préremplie, puis un seul clic sur « Envoyer ». Requiert d'être connecté à Gmail dans ce navigateur. Screenpipe n'expose pas d'envoi SMTP par API. |
+
+Garde-fous : jeton d'équipe obligatoire ; hub en HTTPS ou loopback ; Screenpipe en loopback uniquement ; avec `CANARY_TEST_INBOX`, l'email part vers cette boîte et le sujet indique le destinataire prévu ; sur une page de connexion Google, aucun clic n'est fait ; chaque action est exécutée une seule fois, sans retry si l'envoi du résultat au hub échoue.
+
 ## DSL et moteur
 
 Exemples complets : [v1](examples/v1.canary), [v2](examples/v2.canary).

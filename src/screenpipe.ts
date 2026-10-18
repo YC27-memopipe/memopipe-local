@@ -2,6 +2,11 @@ import type { RecordingFixture, ScreenRecord } from "./types.ts";
 
 export type Fetcher = typeof fetch;
 type ContentType = "accessibility" | "ocr";
+export type BrowserId = "owned-default" | "user-browser";
+export interface ImapMessage { id: number; from: string; to: string; subject: string; date: string; }
+function checkBrowser(browser: string): asserts browser is BrowserId {
+  if (browser !== "owned-default" && browser !== "user-browser") throw new Error("Browser must be owned-default or user-browser");
+}
 export function localBase(value = process.env.SCREENPIPE_LOCAL_API_URL ?? "http://localhost:3030"): URL {
   const url = new URL(value);
   if (url.protocol !== "http:" || !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) throw new Error("Screenpipe requires a loopback HTTP origin");
@@ -56,6 +61,57 @@ export class ScreenpipeClient {
     } catch { throw new Error("Screenpipe unreachable or request timed out; check local app and API URL"); }
     if (!response.ok) throw new Error(`Screenpipe HTTP ${response.status}${[401, 403].includes(response.status) ? ": check local API key" : ""}`);
     try { return await response.json(); } catch { throw new Error("Screenpipe returned invalid JSON"); }
+  }
+  /** Authenticated JSON call to a connection endpoint (IMAP, browsers); errors keep Screenpipe's own message. */
+  private async call(method: "GET" | "POST", path: string, body?: unknown): Promise<any> {
+    const key = this.options.key ?? process.env.SCREENPIPE_LOCAL_API_KEY;
+    if (!key) throw new Error("Set SCREENPIPE_LOCAL_API_KEY (obtain privately with screenpipe auth token)");
+    let response: Response;
+    try {
+      response = await (this.options.fetcher ?? fetch)(new URL(path, this.base), {
+        method, redirect: "error", signal: AbortSignal.timeout(this.options.timeoutMs ?? 45000),
+        headers: { Authorization: `Bearer ${key}`, "X-Screenpipe-Client": "api", "X-Screenpipe-Agent": "canary", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+    } catch { throw new Error("Screenpipe unreachable or request timed out; check local app and API URL"); }
+    const text = await response.text();
+    let value: any = null;
+    try { value = text ? JSON.parse(text) : null; } catch {}
+    if (!response.ok) throw new Error(`Screenpipe HTTP ${response.status} on ${path.split("?")[0]}${typeof value?.error === "string" ? `: ${value.error}` : ""}`);
+    if (value === null || typeof value !== "object") throw new Error("Screenpipe returned invalid JSON");
+    return value;
+  }
+  async connected(id: "imap" | "email"): Promise<boolean> {
+    return (await this.call("GET", `/connections/${id}`)).connected === true;
+  }
+  /** Gmail inbox through Screenpipe's IMAP connection. */
+  async imapMessages(query: string, limit = 5): Promise<ImapMessage[]> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) throw new Error("IMAP limit must be between 1 and 20");
+    const value = await this.call("GET", `/connections/imap/messages?${new URLSearchParams({ limit: String(limit), mailbox: "INBOX", query })}`);
+    if (!Array.isArray(value.messages)) throw new Error("Invalid IMAP response: expected messages[]");
+    return value.messages.filter((m: any) => Number.isSafeInteger(m?.id))
+      .map((m: any) => ({ id: m.id, from: String(m.from ?? ""), to: String(m.to ?? ""), subject: String(m.subject ?? ""), date: String(m.date ?? "") }));
+  }
+  async imapMessage(id: number): Promise<{ snippet: string; body: string }> {
+    if (!Number.isSafeInteger(id) || id < 0) throw new Error("Invalid IMAP message id");
+    const value = await this.call("GET", `/connections/imap/messages/${id}`);
+    return { snippet: String(value.snippet ?? ""), body: String(value.body ?? "") };
+  }
+  /** Browsers driven by Screenpipe: owned-default (embedded) or user-browser (extension). */
+  async browserNavigate(browser: BrowserId, url: string): Promise<void> {
+    checkBrowser(browser);
+    if (new URL(url).protocol !== "https:") throw new Error("Browser navigation requires an HTTPS URL");
+    await this.call("POST", `/connections/browsers/${browser}/navigate`, { url });
+  }
+  async browserSnapshot(browser: BrowserId): Promise<{ url: string; title: string; tree: string }> {
+    checkBrowser(browser);
+    const value = await this.call("GET", `/connections/browsers/${browser}/snapshot`);
+    return { url: String(value.url ?? ""), title: String(value.title ?? ""), tree: String(value.tree ?? "") };
+  }
+  async browserClick(browser: BrowserId, ref: string): Promise<void> {
+    checkBrowser(browser);
+    if (!/^e\d+$/.test(ref)) throw new Error("Invalid snapshot element ref");
+    await this.call("POST", `/connections/browsers/${browser}/act`, { ref, action: "click" });
   }
   async health(): Promise<{ captureActive: boolean; frameStatus?: string; uiRunning?: boolean }> {
     const value = await this.get("/health", false);

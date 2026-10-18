@@ -1,10 +1,13 @@
 import type { ScenarioUploadRequest, ScenarioUploadResponse } from "./types.ts";
 import { validateScenario } from "./validation.ts";
 
-export function hubEndpoint(base: string): URL {
+export function hubOrigin(base: string): URL {
   const url = new URL(base);
   if (url.username || url.password || url.search || url.hash || url.pathname !== "/" || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) throw new Error("Hub requires HTTPS or a loopback HTTP origin");
-  return new URL("/api/scenarios", url);
+  return url;
+}
+export function hubEndpoint(base: string): URL {
+  return new URL("/api/scenarios", hubOrigin(base));
 }
 export async function uploadScenario(base: string, token: string, request: ScenarioUploadRequest, fetcher: typeof fetch = fetch): Promise<ScenarioUploadResponse> {
   validateScenario(request.scenario);

@@ -4,5 +4,5 @@
     "strict": true, "noEmit": true, "skipLibCheck": true,
     "types": ["bun"], "lib": ["ES2022", "DOM"], "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*.ts", "analyze/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"]
+  "include": ["src/**/*.ts", "analyze/**/*.ts", "agent/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"]
 }
