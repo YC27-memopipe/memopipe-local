@@ -122,7 +122,9 @@ test("complete transport flow: consent, health, paged search, save, validation a
     expect(calls.filter(c => c === "/api/scenarios")).toHaveLength(2);
     const saved = await Bun.file(`${dir}/recording.json`).json();
     expect(saved.provenance).toBe("recorded"); expect(saved.pages).toHaveLength(4);
-    expect((await stat(`${dir}/recording.json`)).mode & 0o777).toBe(0o600);
+    // Windows exposes emulated POSIX modes; actual access is controlled by NTFS ACLs.
+    if (process.platform !== "win32") expect((await stat(`${dir}/recording.json`)).mode & 0o777).toBe(0o600);
+    expect((await stat(`${dir}/recording.json`)).isFile()).toBe(true);
     expect(messages.some(m => m.includes("screenpipe://frame/51234"))).toBe(true);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

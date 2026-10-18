@@ -2,6 +2,29 @@
 
 Partie locale du MVP Screenpipe Track 3 : DSL sans `eval`, moteur pas à pas indépendant de Next.js, comparaison des permissions et analyse Screenpipe avec consentement. `memopipe-serv` porte le hub, Nimbus IT et sa base ; ce dépôt ne contient aucun serveur web.
 
+## Découvrir les procédures adaptées à son historique
+
+Le nouveau parcours ne nécessite pas de choisir l’automatisation d’Alice au départ. Il extrait les cas Nimbus de l’historique Screenpipe ; le hub les compare aux procédures publiées dans son catalogue. Les références restent à confirmer avant les tests.
+
+```sh
+# .env : SCREENPIPE_LOCAL_API_KEY, CANARY_HUB_URL, CANARY_TEAM_TOKEN, CANARY_AUTHOR=Bob
+bun run canary:discover --since 24h
+
+# Démonstration fictive explicite, sans lecture de Screenpipe
+bun run canary:discover --fixtures fixtures/bob.json
+
+# Inspection locale sans envoi au hub
+bun run canary:discover --fixtures fixtures/bob.json --dry-run
+```
+
+Le terminal demande d’abord le consentement de lecture, puis l’autorisation de transmettre les champs et citations affichés. Il renvoie l’URL des recommandations. Aucune capture complète n’est transmise et aucun cas ne devient un test avant sa validation dans le hub.
+
+Pour lancer cette analyse directement depuis le hub, laisser tourner `bun run canary:agent` sur le PC qui contient l’historique, puis ouvrir **Découvrir** dans le hub avec la même identité. L’agent utilise `CANARY_AUTHOR` (ou `--author Bob`) pour ne récupérer que les analyses d’historique de cette personne. Gmail est facultatif et son absence ne bloque pas ce parcours.
+
+Le périmètre actuel est **Tickets Nimbus / Console des permissions**. Il reconstitue les champs et résultats visibles, sans générer automatiquement une procédure à partir des clics. Les preuves des fixtures sont fictives ; la provenance des enregistrements réels reste déclarative.
+
+Le diagnostic des échecs et la proposition de correction sont désormais générés par OpenAI dans le **hub**, après un consentement distinct et un aperçu du contexte minimisé. La clé `OPENAI_API_KEY` et `AI_MODEL` se configurent uniquement dans `memopipe-serv/.env`. L’agent local ne reçoit pas cette clé. Les tests du hub bloquent Gmail et les actions hors du ticket/demandeur du test ; la publication passe toujours par une revue humaine.
+
 ## Démarrer
 
 Bun ≥ 1.3 (vérifié avec 1.4.3).

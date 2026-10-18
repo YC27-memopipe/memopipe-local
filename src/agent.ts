@@ -1,5 +1,6 @@
 import { hubOrigin } from "./hub.ts";
 import type { BrowserId, ScreenpipeClient } from "./screenpipe.ts";
+import { discoverHistory, type HistoryScope } from "./discovery.ts";
 
 /** Real actions queued by the hub (which cannot reach Screenpipe) and executed on this PC. */
 export interface AgentJob { id: number; action: string; args: Record<string, unknown>; }
@@ -8,7 +9,7 @@ export interface MailSearch { count: number; first: Mail | null; items: Mail[]; 
 export interface MailSent { to: string; delivered_to: string; redirected: boolean; }
 export type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 export interface SendOptions { browser: BrowserId; testInbox?: string; sleep?: (ms: number) => Promise<void>; composeTimeoutMs?: number; confirmTimeoutMs?: number; }
-export interface HubLink { base: string; token: string; label: string; fetcher?: typeof fetch; }
+export interface HubLink { base: string; token: string; label: string; author?: string; fetcher?: typeof fetch; }
 export class AgentAuthError extends Error {}
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -74,12 +75,16 @@ export async function gmailSend(client: ScreenpipeClient, args: Record<string, u
 }
 
 export function createHandlers(client: ScreenpipeClient, options: SendOptions): Record<string, Handler> {
-  return { "gmail.search": args => gmailSearch(client, args), "gmail.send": args => gmailSend(client, args, options) };
+  return {
+    "gmail.search": args => gmailSearch(client, args),
+    "gmail.send": args => gmailSend(client, args, options),
+    "screenpipe.discover": args => discoverHistory(client, args as unknown as HistoryScope),
+  };
 }
 
 function hubHeaders(link: HubLink) {
   if (!link.token.trim()) throw new Error("Hub token required (CANARY_TEAM_TOKEN)");
-  return { Authorization: `Bearer ${link.token}`, "Content-Type": "application/json", "X-Memopipe-Agent": link.label.slice(0, 80) };
+  return { Authorization: `Bearer ${link.token}`, "Content-Type": "application/json", "X-Memopipe-Agent": link.label.slice(0, 80), "X-Memopipe-User": (link.author ?? "Bob").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() };
 }
 async function hubFetch(link: HubLink, path: string, init: RequestInit = {}): Promise<Response> {
   const headers = hubHeaders(link), url = new URL(path, hubOrigin(link.base));
